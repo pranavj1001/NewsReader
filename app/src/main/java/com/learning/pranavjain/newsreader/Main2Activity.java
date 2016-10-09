@@ -20,8 +20,10 @@ public class Main2Activity extends AppCompatActivity {
         Intent i = getIntent();
 
         String url = i.getStringExtra("articleUrl");
+        //String content = i.getStringExtra("articleContent");
 
         webView.loadUrl(url);
+        //webView.loadData(content,"text/html","UTF-8");
 
     }
 }

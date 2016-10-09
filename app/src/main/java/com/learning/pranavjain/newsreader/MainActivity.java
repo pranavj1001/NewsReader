@@ -36,9 +36,10 @@ public class MainActivity extends AppCompatActivity {
 
     SQLiteDatabase articlesDB;
 
-    ArrayList<String> listViewTitles = new ArrayList<String>();
     ArrayAdapter arrayAdapter;
+    ArrayList<String> listViewTitles = new ArrayList<String>();
     ArrayList<String> listViewUrls = new ArrayList<String>();
+    ArrayList<String> listViewContent = new ArrayList<String>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
                 //Log.i("articleURL",listViewUrls.get(position));
                 Intent i = new Intent(getApplicationContext(), Main2Activity.class);
                 i.putExtra("articleUrl",listViewUrls.get(position));
+                //i.putExtra("articleContent",listViewContent.get(position));
                 startActivity(i);
 
             }
@@ -81,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
         try {
 
             Cursor cursor = articlesDB.rawQuery("SELECT * FROM articles ORDER BY articleId DESC", null);
-            int articleIndex = cursor.getColumnIndex("articleId");
+            //int contentIndex = cursor.getColumnIndex("content");
             int urlIndex = cursor.getColumnIndex("url");
             int titleIndex = cursor.getColumnIndex("title");
 
@@ -96,6 +98,7 @@ public class MainActivity extends AppCompatActivity {
 
                 listViewTitles.add(cursor.getString(titleIndex));
                 listViewUrls.add(cursor.getString(urlIndex));
+                //listViewContent.add(cursor.getString(contentIndex));
 
                 if (j > 19) break;
                 else cursor.moveToNext();
@@ -141,6 +144,7 @@ public class MainActivity extends AppCompatActivity {
 
                     String articleTitle = "";
                     String articleURL = "";
+                    String articleContent  = "";
 
                     String articleId = jsonArray.getString(i);
 
@@ -170,17 +174,30 @@ public class MainActivity extends AppCompatActivity {
                     if(jsonObject.has("url")){
                         articleURL = jsonObject.getString("url");
                         articleUrls.put(Integer.valueOf(articleId),articleURL);
+                        /*
+                        url = new URL(articleURL);
+                        httpURLConnection = (HttpURLConnection) url.openConnection();
+                        in = httpURLConnection.getInputStream();
+                        inputStreamReader = new InputStreamReader(in);
+
+                        data = inputStreamReader.read();
+                        while(data != -1){
+
+                            char current = (char) data;
+                            articleContent += current;
+                            data = inputStreamReader.read();
+
+                        }
+                        */
                     }
 
-                    String sql = "INSERT INTO articles (articleId, url, title) VALUES (?, ?, ?)";
+                    String sql = "INSERT INTO articles (articleId, url, title, content) VALUES (?, ?, ?, ?)";
                     SQLiteStatement sqLiteStatement = articlesDB.compileStatement(sql);
                     sqLiteStatement.bindString(1,articleId);
                     sqLiteStatement.bindString(2,articleURL);
                     sqLiteStatement.bindString(3,articleTitle);
+                    sqLiteStatement.bindString(4,articleContent);
                     sqLiteStatement.execute();
-
-                    //Log.i("Article",articleTitle);
-                    //Log.i("Article",articleURL);
 
                 }
 
