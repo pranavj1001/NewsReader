@@ -7,6 +7,10 @@ import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -30,10 +34,27 @@ public class MainActivity extends AppCompatActivity {
 
     SQLiteDatabase articlesDB;
 
+    ArrayList<String> listViewTitles = new ArrayList<String>();
+    ArrayAdapter arrayAdapter;
+    ArrayList<String> listViewUrls = new ArrayList<String>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        ListView listView = (ListView) findViewById(R.id.listView);
+        arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, listViewTitles);
+        listView.setAdapter(arrayAdapter);
+
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                Log.i("articleURL",listViewUrls.get(position));
+
+            }
+        });
 
         articlesDB = this.openOrCreateDatabase("Articles",MODE_PRIVATE,null);
         articlesDB.execSQL("CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY, articleId INTEGER, url VARCHAR, title VARCHAR, content VARCHAR)");
@@ -44,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
             String result = downloadTask.execute("https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty").get();
             //Log.i("Result",result);
 
-            articlesDB.execSQL("DELETE FORM articles");
+            articlesDB.execSQL("DELETE FROM articles");
 
             JSONArray jsonArray = new JSONArray(result);
             for(int i = 0; i < 20; i++){
@@ -90,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
             //Log.i("Article Title",articleTitles.toString());
             //Log.i("Article Urls",articleUrls.toString());
 
-            Cursor cursor = articlesDB.rawQuery("SELECT * FROM articles",null);
+            Cursor cursor = articlesDB.rawQuery("SELECT * FROM articles ORDER BY articleId DESC",null);
             int articleIndex = cursor.getColumnIndex("articleId");
             int urlIndex = cursor.getColumnIndex("url");
             int titleIndex = cursor.getColumnIndex("title");
@@ -98,15 +119,23 @@ public class MainActivity extends AppCompatActivity {
             cursor.moveToFirst();
             int j = 0;
 
+            listViewTitles.clear();
+            listViewUrls.clear();
+
             while(cursor != null){
                 j++;
+
+                listViewTitles.add(cursor.getString(titleIndex));
+                listViewUrls.add(cursor.getString(urlIndex));
+
                 //Log.i("DB - articleId ", String.valueOf(cursor.getInt(articleIndex)));
                 //Log.i("DB - url ", cursor.getString(urlIndex));
                 //Log.i("DB - title ", cursor.getString(titleIndex));
-                if(j>20){
-                    break;
-                }else cursor.moveToNext();
+                if(j>19) break;
+                else cursor.moveToNext();
             }
+
+            arrayAdapter.notifyDataSetChanged();
 
         } catch (Exception e) {
             e.printStackTrace();
