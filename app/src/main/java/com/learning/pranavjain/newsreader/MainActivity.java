@@ -14,6 +14,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -66,59 +67,9 @@ public class MainActivity extends AppCompatActivity {
         updateListView();
 
         DownloadTask downloadTask = new DownloadTask();
+
         try {
-
-            String result = downloadTask.execute("https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty").get();
-            //Log.i("Result",result);
-
-            articlesDB.execSQL("DELETE FROM articles");
-
-            JSONArray jsonArray = new JSONArray(result);
-            for(int i = 0; i < 20; i++){
-
-                String articleTitle = "";
-                String articleURL = "";
-
-                String articleId = jsonArray.getString(i);
-                articleIds.add(Integer.valueOf(articleId));
-
-                //Log.i("Article","Reached HERE");
-
-                DownloadTask getArticle = new DownloadTask();
-
-                String articleInfo  = getArticle.execute("https://hacker-news.firebaseio.com/v0/item/"+articleId+".json?print=pretty").get();
-                JSONObject jsonObject = new JSONObject(articleInfo);
-
-                //Log.i("jsonObject",jsonObject.toString());
-
-                if(jsonObject.has("title")){
-                    articleTitle = jsonObject.getString("title");
-                    articleTitles.put(Integer.valueOf(articleId),articleTitle);
-                }
-                if(jsonObject.has("url")){
-                    articleURL = jsonObject.getString("url");
-                    articleUrls.put(Integer.valueOf(articleId),articleURL);
-                }
-
-                String sql = "INSERT INTO articles (articleId, url, title) VALUES (?, ?, ?)";
-                SQLiteStatement sqLiteStatement = articlesDB.compileStatement(sql);
-                sqLiteStatement.bindString(1,articleId);
-                sqLiteStatement.bindString(2,articleURL);
-                sqLiteStatement.bindString(3,articleTitle);
-                sqLiteStatement.execute();
-
-                //Log.i("Article",articleTitle);
-                //Log.i("Article",articleURL);
-
-            }
-
-            //Log.i("Article","Reached HERE");
-            //Log.i("Article Id",articleIds.toString());
-            //Log.i("Article Title",articleTitles.toString());
-            //Log.i("Article Urls",articleUrls.toString());
-
-           updateListView();
-
+            downloadTask.execute("https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -146,9 +97,6 @@ public class MainActivity extends AppCompatActivity {
                 listViewTitles.add(cursor.getString(titleIndex));
                 listViewUrls.add(cursor.getString(urlIndex));
 
-                //Log.i("DB - articleId ", String.valueOf(cursor.getInt(articleIndex)));
-                //Log.i("DB - url ", cursor.getString(urlIndex));
-                //Log.i("DB - title ", cursor.getString(titleIndex));
                 if (j > 19) break;
                 else cursor.moveToNext();
             }
@@ -186,9 +134,61 @@ public class MainActivity extends AppCompatActivity {
 
                 }
 
+                articlesDB.execSQL("DELETE FROM articles");
+
+                JSONArray jsonArray = new JSONArray(result);
+                for(int i = 0; i < 20; i++){
+
+                    String articleTitle = "";
+                    String articleURL = "";
+
+                    String articleId = jsonArray.getString(i);
+
+                    url = new URL("https://hacker-news.firebaseio.com/v0/item/"+articleId+".json?print=pretty");
+                    httpURLConnection = (HttpURLConnection) url.openConnection();
+                    in = httpURLConnection.getInputStream();
+                    inputStreamReader = new InputStreamReader(in);
+
+                    data = inputStreamReader.read();
+                    String articleInfo  = "";
+                    while(data != -1){
+
+                        char current = (char) data;
+                        articleInfo += current;
+                        data = inputStreamReader.read();
+
+                    }
+
+                    articleIds.add(Integer.valueOf(articleId));
+
+                    JSONObject jsonObject = new JSONObject(articleInfo);
+
+                    if(jsonObject.has("title")){
+                        articleTitle = jsonObject.getString("title");
+                        articleTitles.put(Integer.valueOf(articleId),articleTitle);
+                    }
+                    if(jsonObject.has("url")){
+                        articleURL = jsonObject.getString("url");
+                        articleUrls.put(Integer.valueOf(articleId),articleURL);
+                    }
+
+                    String sql = "INSERT INTO articles (articleId, url, title) VALUES (?, ?, ?)";
+                    SQLiteStatement sqLiteStatement = articlesDB.compileStatement(sql);
+                    sqLiteStatement.bindString(1,articleId);
+                    sqLiteStatement.bindString(2,articleURL);
+                    sqLiteStatement.bindString(3,articleTitle);
+                    sqLiteStatement.execute();
+
+                    //Log.i("Article",articleTitle);
+                    //Log.i("Article",articleURL);
+
+                }
+
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             } catch (IOException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
                 e.printStackTrace();
             }
 
@@ -196,6 +196,11 @@ public class MainActivity extends AppCompatActivity {
             return result;
         }
 
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            updateListView();
+        }
     }
 
 }
