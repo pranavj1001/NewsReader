@@ -1,5 +1,6 @@
 package com.learning.pranavjain.newsreader;
 
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
@@ -51,13 +52,18 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                Log.i("articleURL",listViewUrls.get(position));
+                //Log.i("articleURL",listViewUrls.get(position));
+                Intent i = new Intent(getApplicationContext(), Main2Activity.class);
+                i.putExtra("articleUrl",listViewUrls.get(position));
+                startActivity(i);
 
             }
         });
 
         articlesDB = this.openOrCreateDatabase("Articles",MODE_PRIVATE,null);
         articlesDB.execSQL("CREATE TABLE IF NOT EXISTS articles (id INTEGER PRIMARY KEY, articleId INTEGER, url VARCHAR, title VARCHAR, content VARCHAR)");
+
+        updateListView();
 
         DownloadTask downloadTask = new DownloadTask();
         try {
@@ -111,7 +117,19 @@ public class MainActivity extends AppCompatActivity {
             //Log.i("Article Title",articleTitles.toString());
             //Log.i("Article Urls",articleUrls.toString());
 
-            Cursor cursor = articlesDB.rawQuery("SELECT * FROM articles ORDER BY articleId DESC",null);
+           updateListView();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void updateListView() {
+
+        try {
+
+            Cursor cursor = articlesDB.rawQuery("SELECT * FROM articles ORDER BY articleId DESC", null);
             int articleIndex = cursor.getColumnIndex("articleId");
             int urlIndex = cursor.getColumnIndex("url");
             int titleIndex = cursor.getColumnIndex("title");
@@ -122,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
             listViewTitles.clear();
             listViewUrls.clear();
 
-            while(cursor != null){
+            while (cursor != null) {
                 j++;
 
                 listViewTitles.add(cursor.getString(titleIndex));
@@ -131,13 +149,13 @@ public class MainActivity extends AppCompatActivity {
                 //Log.i("DB - articleId ", String.valueOf(cursor.getInt(articleIndex)));
                 //Log.i("DB - url ", cursor.getString(urlIndex));
                 //Log.i("DB - title ", cursor.getString(titleIndex));
-                if(j>19) break;
+                if (j > 19) break;
                 else cursor.moveToNext();
             }
 
             arrayAdapter.notifyDataSetChanged();
 
-        } catch (Exception e) {
+        }catch (Exception e){
             e.printStackTrace();
         }
 
